@@ -1,0 +1,49 @@
+# Install necessary library
+!pip install scikit-surprise
+
+# Import libraries
+from surprise import SVD, Dataset, Reader
+from surprise.model_selection import train_test_split, accuracy
+import pandas as pd
+import numpy as np
+
+# Sample Movie Rating Dataset
+data_dict = {
+    "userID": ["A", "A", "A", "B", "B", "C", "C", "D", "D", "E"],
+    "itemID": ["Inception", "Avengers", "Interstellar", "Inception", "Interstellar",
+               "Avengers", "Inception", "Interstellar", "Avengers", "Inception"],
+    "rating": [5, 4, 5, 4, 4, 3, 4, 5, 4, 3]
+}
+df = pd.DataFrame(data_dict)
+
+# Display dataset
+print("Dataset:")
+print(df)
+
+# Prepare data for Surprise
+reader = Reader(rating_scale=(1, 5))
+data = Dataset.load_from_df(df[["userID", "itemID", "rating"]], reader)
+
+# Train-test split
+trainset, testset = train_test_split(data, test_size=0.25, random_state=42)
+
+# Build the SVD model
+model = SVD()
+model.fit(trainset)
+
+# Predict on test data
+predictions = model.test(testset)
+
+# Evaluate
+print("\nRMSE:", accuracy.rmse(predictions))
+
+# Sample Recommendation for User 'C'
+user_id = "C"
+item_list = df["itemID"].unique()
+already_rated = df[df["userID"] == user_id]["itemID"].values
+items_to_predict = [item for item in item_list if item not in already_rated]
+
+print(f"\nRecommendations for User {user_id}:")
+for item in items_to_predict:
+    pred = model.predict(user_id, item)
+    print(f"{item}: Predicted Rating = {pred.est:.2f}")
